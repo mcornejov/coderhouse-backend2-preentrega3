@@ -16,6 +16,8 @@ const eventSchema = new mongoose.Schema(
       default: 'draft',
     },
     organizer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    // Categoría del evento (cata, taller, charla, música). Se gestiona con el CRUD de eventos.
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
   },
   { timestamps: true }
 );

@@ -4,8 +4,10 @@ import { hashPassword, comparePassword } from '../utils/hash.js';
 import {
   isNonEmptyString,
   isValidEmail,
+  isPasswordTooLong,
   normalizeEmail,
   PASSWORD_MIN_LENGTH,
+  PASSWORD_MAX_BYTES,
 } from '../utils/validators.js';
 
 // Campos que el registro público acepta del cliente. El rol NO está en la lista:
@@ -29,6 +31,12 @@ export default class SessionsService {
     this.usersRepository = usersRepository;
   }
 
+  /**
+   * Registra un usuario con rol por defecto. Lanza BadRequestError (400) si faltan
+   * campos o no cumplen formato/largo, y ConflictError (409) si el email ya existe.
+   * @param {{ first_name?: string, last_name?: string, email?: string, password?: string }} datos
+   * @returns {Promise<{ id: string, first_name: string, last_name: string, email: string, role: string }>}
+   */
   async register(datos = {}) {
     // 1. Presencia de campos obligatorios
     const faltantes = CAMPOS_REGISTRO.filter((campo) => !isNonEmptyString(datos[campo]));
@@ -42,6 +50,9 @@ export default class SessionsService {
     }
     if (datos.password.length < PASSWORD_MIN_LENGTH) {
       throw new BadRequestError(`La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres`);
+    }
+    if (isPasswordTooLong(datos.password)) {
+      throw new BadRequestError(`La contraseña no puede superar los ${PASSWORD_MAX_BYTES} bytes`);
     }
 
     // 3. Normalización y unicidad del email
@@ -62,9 +73,14 @@ export default class SessionsService {
     });
   }
 
-  // Verifica las credenciales y devuelve los datos mínimos del usuario autenticado
-  // ({ id, email, role }). Cualquier discrepancia responde con el mismo mensaje
-  // genérico: no se revela si el email existe o si falló la contraseña.
+  /**
+   * Verifica las credenciales y devuelve los datos mínimos del usuario autenticado.
+   * Lanza BadRequestError (400) si falta email o password y UnauthorizedError (401)
+   * con un mensaje genérico ante cualquier discrepancia: no se revela si el email
+   * existe o si falló la contraseña.
+   * @param {{ email?: string, password?: string }} datos
+   * @returns {Promise<{ id: string, email: string, role: string }>}
+   */
   async login(datos = {}) {
     const faltantes = CAMPOS_LOGIN.filter((campo) => !isNonEmptyString(datos[campo]));
     if (faltantes.length > 0) {

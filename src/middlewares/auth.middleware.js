@@ -18,9 +18,15 @@ function extraerToken(req) {
   return coincidencia ? coincidencia[1] : null;
 }
 
-// Middleware de autenticación: verifica el JWT y deja los datos mínimos del
-// usuario en req.user. Responde 401 "No autenticado" ante cualquier falla
-// (sin token, firma inválida, token manipulado o expirado), sin dar detalles.
+/**
+ * Middleware de autenticación: verifica el JWT y deja los datos mínimos del
+ * usuario en req.user como { id, email, role }. Responde 401 "No autenticado"
+ * ante cualquier falla (sin token, firma inválida, token manipulado o expirado),
+ * sin dar detalles que ayuden a un atacante.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
 export function auth(req, res, next) {
   const token = extraerToken(req);
 

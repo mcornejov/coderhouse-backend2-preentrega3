@@ -25,14 +25,25 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
   process.exit(1);
 }
 
-// Expiración del JWT en el formato que acepta jsonwebtoken: segundos ("3600") o
-// duración con unidad ("15m", "1h", "7d"). Por defecto una hora, igual que la cookie.
-const JWT_EXPIRES_IN_REGEX = /^\d+\s*(ms|s|m|h|d|w|y)?$/i;
-const jwtExpiresIn = (process.env.JWT_EXPIRES_IN || '1h').trim();
+// Expiración del JWT: un número de segundos ("3600") o una duración con unidad
+// ("15m", "1h", "7d"). Por defecto una hora, igual que la cookie de sesión.
+// Un valor solo numérico se convierte a Number porque jsonwebtoken interpreta la
+// cadena "3600" como milisegundos y el número 3600 como segundos.
+const JWT_EXPIRES_IN_REGEX = /^(\d+)\s*(ms|s|m|h|d|w|y)?$/i;
+const jwtExpiresInTexto = (process.env.JWT_EXPIRES_IN || '1h').trim();
+const expiracion = JWT_EXPIRES_IN_REGEX.exec(jwtExpiresInTexto);
 
-if (!JWT_EXPIRES_IN_REGEX.test(jwtExpiresIn)) {
-  console.error(`Error de configuración: JWT_EXPIRES_IN no es válida (valor recibido: "${jwtExpiresIn}"). Ejemplos: 3600, 15m, 1h, 7d.`);
+if (!expiracion || Number(expiracion[1]) === 0) {
+  console.error(`Error de configuración: JWT_EXPIRES_IN debe ser un número de segundos o una duración mayor que cero (valor recibido: "${jwtExpiresInTexto}"). Ejemplos: 3600, 15m, 1h, 7d.`);
   process.exit(1);
+}
+
+const jwtExpiresIn = expiracion[2] ? jwtExpiresInTexto : Number(expiracion[1]);
+
+// Un secreto corto se puede adivinar por fuerza bruta: se avisa sin detener el arranque
+const JWT_SECRET_MIN_LENGTH = 32;
+if (process.env.JWT_SECRET.length < JWT_SECRET_MIN_LENGTH) {
+  console.warn(`Aviso: JWT_SECRET tiene menos de ${JWT_SECRET_MIN_LENGTH} caracteres; usa un valor largo y aleatorio (ver .env.example).`);
 }
 
 const config = {

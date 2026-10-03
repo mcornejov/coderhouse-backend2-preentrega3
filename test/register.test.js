@@ -84,6 +84,22 @@ describe('POST /api/sessions/register', () => {
     assert.equal(await User.countDocuments(), 0);
   });
 
+  test('responde 400 si la contraseña supera los 72 bytes (límite de bcrypt)', async () => {
+    const larga = 'a'.repeat(73);
+    const multibyte = 'ñ'.repeat(37); // 74 bytes en UTF-8
+    for (const password of [larga, multibyte]) {
+      const res = await request(app).post(REGISTER).send({ ...usuarioValido, password });
+      assert.equal(res.status, 400);
+      assert.equal(res.body.status, 'error');
+    }
+    assert.equal(await User.countDocuments(), 0);
+  });
+
+  test('acepta una contraseña de exactamente 72 bytes', async () => {
+    const res = await request(app).post(REGISTER).send({ ...usuarioValido, password: 'a'.repeat(72) });
+    assert.equal(res.status, 201);
+  });
+
   test('responde 409 si el email ya está registrado (sin importar mayúsculas o espacios)', async () => {
     await request(app).post(REGISTER).send(usuarioValido);
     const res = await request(app).post(REGISTER).send({ ...usuarioValido, email: '  ANA@mail.COM' });

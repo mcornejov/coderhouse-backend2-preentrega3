@@ -1,6 +1,6 @@
 // DAO de eventos con almacenamiento en memoria. Es la única capa que conoce
-// cómo se guardan los datos; en la próxima entrega se reemplaza por una
-// implementación con Mongoose sin tocar repositories, services ni controllers.
+// cómo se guardan los datos; en la entrega del CRUD de eventos se reemplaza por
+// una implementación con Mongoose sin tocar repositories, services ni controllers.
 export default class EventsDao {
   #eventos = [];
 
